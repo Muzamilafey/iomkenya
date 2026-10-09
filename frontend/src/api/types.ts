@@ -120,6 +120,10 @@ export interface PublicSettings {
 export interface AdminSettings extends PublicSettings {
   applicationNumberPrefix: string;
   updatedAt: string;
+  notificationEmails: string[];
+  notifyOnSubmission: boolean;
+  notifyOnPaymentFailure: boolean;
+  email: { configured: boolean; host: string | null; from: string | null };
   mpesa: {
     configured: boolean;
     environment: string;

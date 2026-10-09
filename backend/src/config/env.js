@@ -29,6 +29,14 @@ const env = {
     callbackUrl: process.env.MPESA_CALLBACK_URL || '',
     transactionType: process.env.MPESA_TRANSACTION_TYPE || 'CustomerPayBillOnline',
   },
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: int(process.env.SMTP_PORT, 587),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.EMAIL_FROM || '',
+  },
   uploads: {
     dir: path.resolve(__dirname, '../..', process.env.UPLOAD_DIR || 'uploads'),
     maxFileSizeMb: int(process.env.MAX_FILE_SIZE_MB, 5),
@@ -56,5 +64,7 @@ env.mpesa.isConfigured = Boolean(
     env.mpesa.passkey &&
     env.mpesa.callbackUrl
 );
+
+env.smtp.isConfigured = Boolean(env.smtp.host && env.smtp.from);
 
 module.exports = env;

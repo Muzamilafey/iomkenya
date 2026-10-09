@@ -28,6 +28,12 @@ const settingsSchema = new mongoose.Schema(
     applicationFee: { type: Number, default: 1500, min: 1, max: 150000 },
     applicationNumberPrefix: { type: String, default: 'APP', trim: true, uppercase: true, maxlength: 10 },
     manifestRequired: { type: Boolean, default: false },
+
+    // Admin email notifications. Empty recipient list → all active
+    // Super Admins and Application Officers.
+    notificationEmails: { type: [String], default: [] },
+    notifyOnSubmission: { type: Boolean, default: true },
+    notifyOnPaymentFailure: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

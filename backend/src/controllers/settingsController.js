@@ -5,6 +5,7 @@ const Settings = require('../models/Settings');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const mpesaService = require('../services/mpesaService');
+const notifications = require('../services/notificationService');
 const { normalizeKenyanPhone } = require('../utils/phoneUtils');
 
 const MAX_HERO_IMAGES = 6;
@@ -20,6 +21,10 @@ const settingsJSON = (settings) => ({
   applicationNumberPrefix: settings.applicationNumberPrefix,
   updatedAt: settings.updatedAt,
   mpesa: mpesaService.configStatus(),
+  notificationEmails: settings.notificationEmails,
+  notifyOnSubmission: settings.notifyOnSubmission,
+  notifyOnPaymentFailure: settings.notifyOnPaymentFailure,
+  email: notifications.configStatus(),
 });
 
 exports.getSettings = asyncHandler(async (req, res) => {
@@ -53,6 +58,18 @@ exports.updateSettings = asyncHandler(async (req, res) => {
     const prefix = String(b.applicationNumberPrefix).toUpperCase().trim();
     if (!/^[A-Z0-9]{2,10}$/.test(prefix)) throw ApiError.badRequest('Prefix must be 2–10 letters or digits');
     settings.applicationNumberPrefix = prefix;
+  }
+  if (b.notificationEmails !== undefined) {
+    const list = (Array.isArray(b.notificationEmails) ? b.notificationEmails : String(b.notificationEmails).split(/[,;\s]+/))
+      .map((e) => String(e).trim().toLowerCase())
+      .filter(Boolean);
+    const invalid = list.find((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+    if (invalid) throw ApiError.badRequest(`Invalid notification email: ${invalid}`);
+    if (list.length > 20) throw ApiError.badRequest('At most 20 notification emails');
+    settings.notificationEmails = [...new Set(list)];
+  }
+  for (const f of ['notifyOnSubmission', 'notifyOnPaymentFailure']) {
+    if (b[f] !== undefined) settings[f] = b[f] === true || b[f] === 'true';
   }
   if (b.manifestRequired !== undefined) settings.manifestRequired = b.manifestRequired === true || b.manifestRequired === 'true';
 
@@ -100,4 +117,15 @@ exports.deleteHeroImage = asyncHandler(async (req, res) => {
   await settings.save();
   await removePublicFile(url);
   res.json({ success: true, data: { settings: settingsJSON(settings) } });
+});
+
+exports.sendTestEmail = asyncHandler(async (req, res) => {
+  const result = await notifications.sendAdminEmail({
+    subject: 'Test notification',
+    heading: 'Email notifications are working',
+    intro: `This test was sent by ${req.admin.name} from Admin → Settings.`,
+    rows: [['Sent at', new Date().toLocaleString('en-GB', { timeZone: 'Africa/Nairobi' }) + ' EAT']],
+  });
+  if (!result.sent) throw ApiError.badRequest(`Test email not sent: ${result.reason}`);
+  res.json({ success: true, data: { recipients: result.recipients }, message: `Test email sent to ${result.recipients.join(', ')}` });
 });

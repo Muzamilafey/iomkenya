@@ -7,8 +7,18 @@ import { useSettings } from '../../context/SettingsContext';
 
 type Form = Pick<
   AdminSettings,
-  'agencyName' | 'heroHeadline' | 'heroSubheadline' | 'contactEmail' | 'contactPhone' | 'address' | 'whatsappNumber' | 'applicationNumberPrefix' | 'manifestRequired'
-> & { applicationFee: string };
+  | 'agencyName'
+  | 'heroHeadline'
+  | 'heroSubheadline'
+  | 'contactEmail'
+  | 'contactPhone'
+  | 'address'
+  | 'whatsappNumber'
+  | 'applicationNumberPrefix'
+  | 'manifestRequired'
+  | 'notifyOnSubmission'
+  | 'notifyOnPaymentFailure'
+> & { applicationFee: string; notificationEmails: string };
 
 const toForm = (s: AdminSettings): Form => ({
   agencyName: s.agencyName,
@@ -21,6 +31,9 @@ const toForm = (s: AdminSettings): Form => ({
   applicationNumberPrefix: s.applicationNumberPrefix,
   manifestRequired: s.manifestRequired,
   applicationFee: String(s.applicationFee),
+  notificationEmails: s.notificationEmails.join(', '),
+  notifyOnSubmission: s.notifyOnSubmission,
+  notifyOnPaymentFailure: s.notifyOnPaymentFailure,
 });
 
 export default function SettingsPage() {
@@ -28,6 +41,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [form, setForm] = useState<Form | null>(null);
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const logoInput = useRef<HTMLInputElement>(null);
   const heroInput = useRef<HTMLInputElement>(null);
@@ -61,6 +75,18 @@ export default function SettingsPage() {
     }
   }
 
+  async function sendTest() {
+    setTesting(true);
+    setMessage(null);
+    try {
+      setMessage({ ok: true, text: await adminApi.sendTestEmail() });
+    } catch (e) {
+      setMessage({ ok: false, text: getErrorMessage(e) });
+    } finally {
+      setTesting(false);
+    }
+  }
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form) return;
@@ -72,6 +98,8 @@ export default function SettingsPage() {
   }
 
   const set = (k: keyof Form) => (v: string) => setForm((f) => (f ? { ...f, [k]: v } : f));
+  const toggle = (k: 'notifyOnSubmission' | 'notifyOnPaymentFailure' | 'manifestRequired') => (checked: boolean) =>
+    setForm((f) => (f ? { ...f, [k]: checked } : f));
 
   return (
     <div className="space-y-6">
@@ -109,8 +137,49 @@ export default function SettingsPage() {
             <TextField label="Application number prefix" value={form.applicationNumberPrefix} onChange={(v) => set('applicationNumberPrefix')(v.toUpperCase())} hint={`Example: ${form.applicationNumberPrefix || 'APP'}-${new Date().getFullYear()}-000001`} maxLength={10} />
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" className="h-4 w-4 rounded border-slate-300" checked={form.manifestRequired} onChange={(e) => setForm((f) => (f ? { ...f, manifestRequired: e.target.checked } : f))} />
+            <input type="checkbox" className="h-4 w-4 rounded border-slate-300" checked={form.manifestRequired} onChange={(e) => toggle('manifestRequired')(e.target.checked)} />
             Manifest number and manifest card are mandatory
+          </label>
+        </section>
+
+        <section className="card space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-semibold text-slate-900">Email notifications</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                SMTP is set in server environment variables.{' '}
+                {settings.email.configured ? (
+                  <span className="font-semibold text-emerald-700">Configured{settings.email.host ? ` (${settings.email.host})` : ''}</span>
+                ) : (
+                  <span className="font-semibold text-red-700">Not configured — emails will not be sent</span>
+                )}
+              </p>
+            </div>
+            <button type="button" className="btn-secondary btn-sm shrink-0" onClick={sendTest} disabled={testing || !settings.email.configured}>
+              {testing ? 'Sending…' : 'Send test email'}
+            </button>
+          </div>
+          <div>
+            <label className="label" htmlFor="notify-emails">Notification recipients</label>
+            <textarea
+              id="notify-emails"
+              className="input"
+              rows={2}
+              placeholder="ops@your-domain.example, manager@your-domain.example"
+              value={form.notificationEmails}
+              onChange={(e) => set('notificationEmails')(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Comma-separated. Leave blank to email all active Super Admins and Application Officers. Save before sending a test.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" className="h-4 w-4 rounded border-slate-300" checked={form.notifyOnSubmission} onChange={(e) => toggle('notifyOnSubmission')(e.target.checked)} />
+            Email when a new application is submitted (payment confirmed)
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" className="h-4 w-4 rounded border-slate-300" checked={form.notifyOnPaymentFailure} onChange={(e) => toggle('notifyOnPaymentFailure')(e.target.checked)} />
+            Email when a payment fails, is cancelled or expires
           </label>
         </section>
 

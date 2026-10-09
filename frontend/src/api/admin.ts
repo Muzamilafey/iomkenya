@@ -104,9 +104,13 @@ export const adminApi = {
     const { data } = await api.get<{ data: { settings: AdminSettings } }>('/admin/settings');
     return data.data.settings;
   },
-  async updateSettings(patch: Partial<AdminSettings>) {
+  async updateSettings(patch: Partial<Omit<AdminSettings, 'notificationEmails'>> & { notificationEmails?: string[] | string }) {
     const { data } = await api.patch<{ data: { settings: AdminSettings } }>('/admin/settings', patch);
     return data.data.settings;
+  },
+  async sendTestEmail() {
+    const { data } = await api.post<{ message: string }>('/admin/settings/test-email');
+    return data.message;
   },
   async uploadLogo(file: File) {
     const form = new FormData();

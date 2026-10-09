@@ -62,10 +62,13 @@ router.patch(
     body('contactPhone').optional().isString().isLength({ max: 30 }),
     body('address').optional().isString().isLength({ max: 300 }),
     body('manifestRequired').optional().isBoolean(),
+    body('notifyOnSubmission').optional().isBoolean(),
+    body('notifyOnPaymentFailure').optional().isBoolean(),
   ],
   validate,
   settings.updateSettings
 );
+router.post('/settings/test-email', superOnly, settings.sendTestEmail);
 router.post('/settings/logo', superOnly, publicImageUpload.single('logo'), settings.uploadLogo);
 router.delete('/settings/logo', superOnly, settings.removeLogo);
 router.post('/settings/hero-images', superOnly, publicImageUpload.array('images', 6), settings.uploadHeroImages);

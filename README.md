@@ -59,6 +59,9 @@ applications, payments, settings and reports.
 - **Settings** (Super Admin): agency name/headline/logo/hero images, contact info, WhatsApp number,
   application fee (KES), application-number prefix, manifest-required toggle, M-Pesa config status.
 - **Admin users** (Super Admin): create accounts, assign roles, activate/deactivate.
+- **Email notifications**: admins are emailed when a new application is submitted (payment
+  confirmed) and, optionally, when a payment fails/is cancelled/expires. Recipients, toggles and a
+  "Send test email" button are in Admin → Settings.
 - **Role-based access control** with four roles (see [Admin Roles](#admin-roles)).
 
 ### Backend
@@ -80,6 +83,7 @@ applications, payments, settings and reports.
 | Payments | M-Pesa Daraja API (STK Push, callback + status query) |
 | Uploads | Multer with server-generated filenames, authenticated-only access |
 | Reports | PDFKit (PDF summaries), CSV export |
+| Email | Nodemailer (any SMTP provider) |
 | Security | Helmet, CORS, express-rate-limit, express-validator, express-mongo-sanitize |
 
 ---
@@ -134,7 +138,8 @@ backend/
                                  ApplicationStatusHistory, schemas/ (document, familyMember, sponsor)
     routes/                      auth, application, payment, public, admin
     services/                    applicationNumberService, mpesaService (Daraja client),
-                                 paymentProcessingService (applyResultToPayment)
+                                 paymentProcessingService (applyResultToPayment),
+                                 notificationService (admin emails)
     scripts/                     createAdmin.js, seedSettings.js
     utils/                       ApiError, asyncHandler, phoneUtils, applicationCompleteness,
                                  constants, csv
@@ -171,7 +176,7 @@ frontend/
 | `Payment` | One document per STK push attempt: phone, amount, `checkoutRequestId`, M-Pesa receipt, result code/description, raw STK response and raw callback |
 | `ApplicationStatusHistory` | Audit log of every status transition (who, from, to, note) |
 | `AdminUser` | Admin accounts: name, email, bcrypt `passwordHash` (never selected by default), role, `isActive`, `lastLoginAt` |
-| `Settings` | Singleton (`GLOBAL_SETTINGS`): agency branding/contact, fee, number prefix, manifest toggle, non-secret M-Pesa status |
+| `Settings` | Singleton (`GLOBAL_SETTINGS`): agency branding/contact, fee, number prefix, manifest toggle, notification recipients/toggles, non-secret M-Pesa status |
 | `Counter` | Atomic per-prefix-per-year sequence for application numbers |
 
 **Application statuses**: `DRAFT`, `AWAITING_PAYMENT`, `PAID`, `SUBMITTED`, `UNDER_REVIEW`,
@@ -253,6 +258,7 @@ header returned when the draft was created. The frontend keeps it in `localStora
 | GET | `/reports/summary`, `/reports/applications.csv` | Super Admin, Application Officer, Viewer |
 | GET | `/reports/payments.csv` | Super Admin, Finance Officer |
 | GET/PATCH | `/settings` | Super Admin |
+| POST | `/settings/test-email` | Super Admin |
 | POST/DELETE | `/settings/logo` | Super Admin |
 | POST | `/settings/hero-images` | Super Admin |
 | DELETE | `/settings/hero-images` | Super Admin |
@@ -301,6 +307,7 @@ header returned when the draft was created. The frontend keeps it in `localStora
 | `MPESA_SHORTCODE`, `MPESA_PASSKEY` | Paybill/till and STK passkey |
 | `MPESA_CALLBACK_URL` | Public HTTPS URL of `/api/payments/mpesa/callback` |
 | `MPESA_TRANSACTION_TYPE` | `CustomerPayBillOnline` or `CustomerBuyGoodsOnline` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | Outgoing mail for admin notifications (optional — emails are skipped when unset) |
 | `UPLOAD_DIR`, `MAX_FILE_SIZE_MB` | Upload location and per-file size cap |
 | `RATE_LIMIT_WINDOW_MINUTES`, `RATE_LIMIT_MAX_REQUESTS` | Global rate limit |
 | `SEED_SUPER_ADMIN_*` | Used by bootstrap scripts only |
@@ -361,6 +368,14 @@ cp .env.example .env
 
 Never commit `.env` files. `MONGODB_URI`, `JWT_SECRET`, and all `MPESA_*` secrets stay
 server-side only and are never sent to the frontend.
+
+### 4b. Configure Email Notifications (optional)
+
+Set the `SMTP_*` and `EMAIL_FROM` variables in `backend/.env` for your mail provider (for Gmail,
+use `smtp.gmail.com`, port `465`, `SMTP_SECURE=true` and an app password). Then open
+Admin → Settings → **Email notifications**, enter recipients (or leave blank to email all active
+Super Admins and Application Officers), save, and click **Send test email**. `CLIENT_URL` is used
+for the "Open in admin dashboard" link in each email.
 
 ### 5. Start the Backend
 

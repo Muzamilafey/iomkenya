@@ -1,6 +1,7 @@
 const Payment = require('../models/Payment');
 const Application = require('../models/Application');
 const ApplicationStatusHistory = require('../models/ApplicationStatusHistory');
+const notifications = require('./notificationService');
 
 function statusForResultCode(code) {
   if (code === '0') return 'PAID';
@@ -92,6 +93,10 @@ async function applyResultToPayment({ checkoutRequestId, resultCode, resultDesc,
         toStatus: 'SUBMITTED',
         note: `M-Pesa payment confirmed${payment.mpesaReceiptNumber ? ` (receipt ${payment.mpesaReceiptNumber})` : ''}`,
       });
+      // Fire-and-forget: email problems must never affect payment processing.
+      Application.findById(app._id)
+        .then((fresh) => fresh && notifications.notifyApplicationSubmitted(fresh, payment))
+        .catch((err) => console.error('[email] notify submitted failed:', err.message));
     } else {
       // Already submitted by an earlier payment; just make sure it's marked paid.
       await Application.updateOne({ _id: payment.application }, { $set: { paymentStatus: 'PAID' } });
@@ -102,6 +107,9 @@ async function applyResultToPayment({ checkoutRequestId, resultCode, resultDesc,
       { _id: payment.application, paymentStatus: { $ne: 'PAID' } },
       { $set: { paymentStatus: newStatus } }
     );
+    Application.findById(payment.application)
+      .then((fresh) => fresh && notifications.notifyPaymentFailed(fresh, payment))
+      .catch((err) => console.error('[email] notify payment failure failed:', err.message));
   }
 
   return payment;
