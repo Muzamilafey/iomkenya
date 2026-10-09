@@ -34,6 +34,18 @@ const settingsSchema = new mongoose.Schema(
     notificationEmails: { type: [String], default: [] },
     notifyOnSubmission: { type: Boolean, default: true },
     notifyOnPaymentFailure: { type: Boolean, default: false },
+
+    // Outgoing mail server configured from the portal. When `host` is empty the
+    // SMTP_* environment variables are used instead. The password is stored
+    // encrypted (utils/secretBox.js) and never returned by the API.
+    smtp: {
+      host: { type: String, default: '', trim: true, maxlength: 255 },
+      port: { type: Number, default: 587, min: 1, max: 65535 },
+      secure: { type: Boolean, default: false },
+      user: { type: String, default: '', trim: true, maxlength: 255 },
+      passEncrypted: { type: String, default: '' },
+      from: { type: String, default: '', trim: true, maxlength: 255 },
+    },
   },
   { timestamps: true }
 );

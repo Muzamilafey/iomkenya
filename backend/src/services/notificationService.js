@@ -2,19 +2,44 @@ const nodemailer = require('nodemailer');
 const env = require('../config/env');
 const Settings = require('../models/Settings');
 const AdminUser = require('../models/AdminUser');
+const { decrypt } = require('../utils/secretBox');
 
-let transporter = null;
-function getTransporter() {
-  if (!env.smtp.isConfigured) return null;
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: env.smtp.host,
-      port: env.smtp.port,
-      secure: env.smtp.secure,
-      auth: env.smtp.user ? { user: env.smtp.user, pass: env.smtp.pass } : undefined,
-    });
+/**
+ * Mail server config: the one saved in Admin → Settings wins; otherwise the
+ * SMTP_* environment variables. Returns null when neither is complete.
+ */
+function resolveSmtp(settings) {
+  const s = settings?.smtp;
+  if (s?.host) {
+    if (!s.from) return null;
+    const pass = s.passEncrypted ? decrypt(s.passEncrypted) : '';
+    if (s.passEncrypted && pass === null) {
+      console.error('[email] Stored SMTP password could not be decrypted (JWT_SECRET changed?) — re-enter it in Settings');
+      return null;
+    }
+    return { source: 'portal', host: s.host, port: s.port || 587, secure: Boolean(s.secure), user: s.user, pass, from: s.from };
   }
-  return transporter;
+  if (env.smtp.isConfigured) return { source: 'env', ...env.smtp };
+  return null;
+}
+
+let cached = { key: null, transporter: null };
+function getTransporter(cfg) {
+  const key = JSON.stringify([cfg.host, cfg.port, cfg.secure, cfg.user, cfg.pass]);
+  if (cached.key !== key) {
+    cached = {
+      key,
+      transporter: nodemailer.createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.secure,
+        auth: cfg.user ? { user: cfg.user, pass: cfg.pass } : undefined,
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+      }),
+    };
+  }
+  return cached.transporter;
 }
 
 const escapeHtml = (s) =>
@@ -58,12 +83,13 @@ function render({ agencyName, heading, intro, rows, link }) {
  */
 async function sendAdminEmail({ subject, heading, intro, rows, link, to }) {
   try {
-    const mailer = getTransporter();
-    if (!mailer) {
+    const settings = await Settings.getSingleton();
+    const cfg = resolveSmtp(settings);
+    if (!cfg) {
       console.log(`[email] SMTP not configured — skipped "${subject}"`);
       return { sent: false, reason: 'SMTP not configured' };
     }
-    const settings = await Settings.getSingleton();
+    const mailer = getTransporter(cfg);
     const recipients = to || (await resolveRecipients(settings));
     if (!recipients.length) {
       console.warn(`[email] No admin recipients — skipped "${subject}"`);
@@ -71,7 +97,7 @@ async function sendAdminEmail({ subject, heading, intro, rows, link, to }) {
     }
     const { html, text } = render({ agencyName: settings.agencyName, heading, intro, rows, link });
     await mailer.sendMail({
-      from: env.smtp.from,
+      from: cfg.from,
       to: recipients.join(', '),
       subject: `[${settings.agencyName}] ${subject}`,
       text,
@@ -121,8 +147,21 @@ async function notifyPaymentFailed(application, payment) {
   });
 }
 
-function configStatus() {
-  return { configured: env.smtp.isConfigured, host: env.smtp.host || null, from: env.smtp.from || null };
+/** Non-secret view of the mail settings for the admin Settings page. */
+function configStatus(settings) {
+  const cfg = resolveSmtp(settings);
+  const s = settings?.smtp || {};
+  return {
+    configured: Boolean(cfg),
+    source: cfg?.source || null,
+    envConfigured: env.smtp.isConfigured,
+    host: s.host || '',
+    port: s.port || 587,
+    secure: Boolean(s.secure),
+    user: s.user || '',
+    from: s.from || '',
+    passwordSet: Boolean(s.passEncrypted),
+  };
 }
 
 module.exports = { sendAdminEmail, notifyApplicationSubmitted, notifyPaymentFailed, configStatus, _render: render };

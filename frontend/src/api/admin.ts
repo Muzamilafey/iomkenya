@@ -49,6 +49,16 @@ export interface ApplicationListItem {
   submittedAt?: string;
 }
 
+export interface SmtpPatch {
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  user?: string;
+  from?: string;
+  password?: string;
+  clearPassword?: boolean;
+}
+
 export type ListParams = Record<string, string | number | undefined>;
 
 const clean = (params: ListParams) =>
@@ -104,7 +114,12 @@ export const adminApi = {
     const { data } = await api.get<{ data: { settings: AdminSettings } }>('/admin/settings');
     return data.data.settings;
   },
-  async updateSettings(patch: Partial<Omit<AdminSettings, 'notificationEmails'>> & { notificationEmails?: string[] | string }) {
+  async updateSettings(
+    patch: Partial<Omit<AdminSettings, 'notificationEmails' | 'email'>> & {
+      notificationEmails?: string[] | string;
+      smtp?: SmtpPatch;
+    }
+  ) {
     const { data } = await api.patch<{ data: { settings: AdminSettings } }>('/admin/settings', patch);
     return data.data.settings;
   },

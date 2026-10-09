@@ -61,7 +61,8 @@ applications, payments, settings and reports.
 - **Admin users** (Super Admin): create accounts, assign roles, activate/deactivate.
 - **Email notifications**: admins are emailed when a new application is submitted (payment
   confirmed) and, optionally, when a payment fails/is cancelled/expires. Recipients, toggles and a
-  "Send test email" button are in Admin → Settings.
+  "Send test email" button are in Admin → Settings, along with the mail server (SMTP) details, so
+  the owner can configure email without touching the server.
 - **Role-based access control** with four roles (see [Admin Roles](#admin-roles)).
 
 ### Backend
@@ -284,7 +285,8 @@ header returned when the draft was created. The frontend keeps it in `localStora
   limits, `express-validator` on inputs, `trust proxy` for deployment behind TLS; CSV exports
   neutralise spreadsheet formula injection.
 - **Secrets** (`MONGODB_URI`, `JWT_SECRET`, `MPESA_*`) live only in server env vars and are never
-  returned to the frontend. The Settings API exposes only non-secret M-Pesa status flags.
+  returned to the frontend. The SMTP password entered in Settings is stored encrypted and is
+  write-only through the API. The Settings API exposes only non-secret M-Pesa status flags.
 - **Callback integrity**: Safaricom does not sign callbacks, so state changes are only accepted for
   a `CheckoutRequestID` the server issued itself, the paid amount must match the amount requested,
   and the status-query fallback independently confirms results with Daraja.
@@ -307,7 +309,7 @@ header returned when the draft was created. The frontend keeps it in `localStora
 | `MPESA_SHORTCODE`, `MPESA_PASSKEY` | Paybill/till and STK passkey |
 | `MPESA_CALLBACK_URL` | Public HTTPS URL of `/api/payments/mpesa/callback` |
 | `MPESA_TRANSACTION_TYPE` | `CustomerPayBillOnline` or `CustomerBuyGoodsOnline` |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | Outgoing mail for admin notifications (optional — emails are skipped when unset) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | Fallback outgoing mail for admin notifications, used when no SMTP server is set in Admin → Settings (optional) |
 | `UPLOAD_DIR`, `MAX_FILE_SIZE_MB` | Upload location and per-file size cap |
 | `RATE_LIMIT_WINDOW_MINUTES`, `RATE_LIMIT_MAX_REQUESTS` | Global rate limit |
 | `SEED_SUPER_ADMIN_*` | Used by bootstrap scripts only |
@@ -371,11 +373,23 @@ server-side only and are never sent to the frontend.
 
 ### 4b. Configure Email Notifications (optional)
 
-Set the `SMTP_*` and `EMAIL_FROM` variables in `backend/.env` for your mail provider (for Gmail,
-use `smtp.gmail.com`, port `465`, `SMTP_SECURE=true` and an app password). Then open
-Admin → Settings → **Email notifications**, enter recipients (or leave blank to email all active
-Super Admins and Application Officers), save, and click **Send test email**. `CLIENT_URL` is used
-for the "Open in admin dashboard" link in each email.
+The portal owner can set everything up from **Admin → Settings → Email notifications** — no
+server access needed:
+
+1. Enter the mail server (SMTP) details from your email provider: host, port, SSL on/off,
+   username, password and "From" address. For Gmail use `smtp.gmail.com`, port `465`, SSL on,
+   your Gmail address and an [app password](https://myaccount.google.com/apppasswords).
+2. Enter the notification recipients (or leave blank to email all active Super Admins and
+   Application Officers) and choose which events send email.
+3. Click **Save settings**, then **Send test email**.
+
+The SMTP password is encrypted in the database (AES-256-GCM, key derived from `JWT_SECRET`) and is
+never sent back to the browser; leave the field blank to keep the saved one. If you rotate
+`JWT_SECRET`, re-enter the SMTP password.
+
+Alternatively, set the `SMTP_*` and `EMAIL_FROM` variables in `backend/.env`; they are used when
+the SMTP host in Settings is left blank. `CLIENT_URL` is used for the "Open in admin dashboard"
+link in each email.
 
 ### 5. Start the Backend
 

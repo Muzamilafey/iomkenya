@@ -123,7 +123,17 @@ export interface AdminSettings extends PublicSettings {
   notificationEmails: string[];
   notifyOnSubmission: boolean;
   notifyOnPaymentFailure: boolean;
-  email: { configured: boolean; host: string | null; from: string | null };
+  email: {
+    configured: boolean;
+    source: 'portal' | 'env' | null;
+    envConfigured: boolean;
+    host: string;
+    port: number;
+    secure: boolean;
+    user: string;
+    from: string;
+    passwordSet: boolean;
+  };
   mpesa: {
     configured: boolean;
     environment: string;

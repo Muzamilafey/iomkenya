@@ -7,6 +7,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const mpesaService = require('../services/mpesaService');
 const notifications = require('../services/notificationService');
 const { normalizeKenyanPhone } = require('../utils/phoneUtils');
+const { encrypt } = require('../utils/secretBox');
 
 const MAX_HERO_IMAGES = 6;
 const PUBLIC_PREFIX = '/uploads/public/';
@@ -24,7 +25,7 @@ const settingsJSON = (settings) => ({
   notificationEmails: settings.notificationEmails,
   notifyOnSubmission: settings.notifyOnSubmission,
   notifyOnPaymentFailure: settings.notifyOnPaymentFailure,
-  email: notifications.configStatus(),
+  email: notifications.configStatus(settings),
 });
 
 exports.getSettings = asyncHandler(async (req, res) => {
@@ -67,6 +68,31 @@ exports.updateSettings = asyncHandler(async (req, res) => {
     if (invalid) throw ApiError.badRequest(`Invalid notification email: ${invalid}`);
     if (list.length > 20) throw ApiError.badRequest('At most 20 notification emails');
     settings.notificationEmails = [...new Set(list)];
+  }
+  if (b.smtp && typeof b.smtp === 'object') {
+    const smtp = b.smtp;
+    const text = (v, max) => String(v ?? '').trim().slice(0, max);
+    if (smtp.host !== undefined) {
+      const host = text(smtp.host, 255);
+      if (host && !/^[a-z0-9.-]+$/i.test(host)) throw ApiError.badRequest('Enter a valid SMTP host, e.g. smtp.gmail.com');
+      settings.smtp.host = host;
+    }
+    if (smtp.port !== undefined) {
+      const port = parseInt(smtp.port, 10);
+      if (!Number.isInteger(port) || port < 1 || port > 65535) throw ApiError.badRequest('SMTP port must be 1–65535');
+      settings.smtp.port = port;
+    }
+    if (smtp.secure !== undefined) settings.smtp.secure = smtp.secure === true || smtp.secure === 'true';
+    if (smtp.user !== undefined) settings.smtp.user = text(smtp.user, 255);
+    if (smtp.from !== undefined) settings.smtp.from = text(smtp.from, 255);
+    // Password is write-only: a non-empty value replaces it, clearPassword removes it.
+    if (smtp.clearPassword === true) settings.smtp.passEncrypted = '';
+    else if (typeof smtp.password === 'string' && smtp.password !== '') {
+      settings.smtp.passEncrypted = encrypt(smtp.password.slice(0, 500));
+    }
+    if (settings.smtp.host && !settings.smtp.from) {
+      throw ApiError.badRequest('Enter a "From" address for outgoing email');
+    }
   }
   for (const f of ['notifyOnSubmission', 'notifyOnPaymentFailure']) {
     if (b[f] !== undefined) settings[f] = b[f] === true || b[f] === 'true';

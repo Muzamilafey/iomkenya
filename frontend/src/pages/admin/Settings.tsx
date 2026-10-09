@@ -18,7 +18,16 @@ type Form = Pick<
   | 'manifestRequired'
   | 'notifyOnSubmission'
   | 'notifyOnPaymentFailure'
-> & { applicationFee: string; notificationEmails: string };
+> & {
+  applicationFee: string;
+  notificationEmails: string;
+  smtpHost: string;
+  smtpPort: string;
+  smtpSecure: boolean;
+  smtpUser: string;
+  smtpFrom: string;
+  smtpPassword: string;
+};
 
 const toForm = (s: AdminSettings): Form => ({
   agencyName: s.agencyName,
@@ -34,6 +43,12 @@ const toForm = (s: AdminSettings): Form => ({
   notificationEmails: s.notificationEmails.join(', '),
   notifyOnSubmission: s.notifyOnSubmission,
   notifyOnPaymentFailure: s.notifyOnPaymentFailure,
+  smtpHost: s.email.host,
+  smtpPort: String(s.email.port || 587),
+  smtpSecure: s.email.secure,
+  smtpUser: s.email.user,
+  smtpFrom: s.email.from,
+  smtpPassword: '',
 });
 
 export default function SettingsPage() {
@@ -90,7 +105,23 @@ export default function SettingsPage() {
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form) return;
-    run(() => adminApi.updateSettings({ ...form, applicationFee: Number(form.applicationFee) }), 'Settings saved');
+    const { smtpHost, smtpPort, smtpSecure, smtpUser, smtpFrom, smtpPassword, ...rest } = form;
+    run(
+      () =>
+        adminApi.updateSettings({
+          ...rest,
+          applicationFee: Number(form.applicationFee),
+          smtp: {
+            host: smtpHost,
+            port: Number(smtpPort) || 587,
+            secure: smtpSecure,
+            user: smtpUser,
+            from: smtpFrom,
+            ...(smtpPassword ? { password: smtpPassword } : {}),
+          },
+        }),
+      'Settings saved'
+    );
   }
 
   if (!form || !settings) {
@@ -98,7 +129,7 @@ export default function SettingsPage() {
   }
 
   const set = (k: keyof Form) => (v: string) => setForm((f) => (f ? { ...f, [k]: v } : f));
-  const toggle = (k: 'notifyOnSubmission' | 'notifyOnPaymentFailure' | 'manifestRequired') => (checked: boolean) =>
+  const toggle = (k: 'notifyOnSubmission' | 'notifyOnPaymentFailure' | 'manifestRequired' | 'smtpSecure') => (checked: boolean) =>
     setForm((f) => (f ? { ...f, [k]: checked } : f));
 
   return (
@@ -147,9 +178,11 @@ export default function SettingsPage() {
             <div>
               <h2 className="font-semibold text-slate-900">Email notifications</h2>
               <p className="mt-1 text-xs text-slate-500">
-                SMTP is set in server environment variables.{' '}
                 {settings.email.configured ? (
-                  <span className="font-semibold text-emerald-700">Configured{settings.email.host ? ` (${settings.email.host})` : ''}</span>
+                  <span className="font-semibold text-emerald-700">
+                    Sending enabled
+                    {settings.email.source === 'env' ? ' (using server environment settings)' : ` via ${settings.email.host}`}
+                  </span>
                 ) : (
                   <span className="font-semibold text-red-700">Not configured — emails will not be sent</span>
                 )}
@@ -159,6 +192,54 @@ export default function SettingsPage() {
               {testing ? 'Sending…' : 'Send test email'}
             </button>
           </div>
+          <fieldset className="space-y-4 rounded-lg border border-slate-200 p-4">
+            <legend className="px-1 text-sm font-semibold text-slate-700">Mail server (SMTP)</legend>
+            <p className="text-xs text-slate-500">
+              Use your email provider’s SMTP details. For Gmail: host <code>smtp.gmail.com</code>, port 465, SSL on,
+              your Gmail address as username and an app password.
+              {settings.email.envConfigured && ' Leave the host blank to use the server’s environment settings.'}
+            </p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-2">
+                <TextField label="SMTP host" value={form.smtpHost} onChange={set('smtpHost')} placeholder="smtp.gmail.com" autoComplete="off" />
+              </div>
+              <TextField label="Port" type="number" min={1} max={65535} value={form.smtpPort} onChange={set('smtpPort')} />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" className="h-4 w-4 rounded border-slate-300" checked={form.smtpSecure} onChange={(e) => toggle('smtpSecure')(e.target.checked)} />
+              Use SSL/TLS (usually on for port 465, off for 587)
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField label="Username" value={form.smtpUser} onChange={set('smtpUser')} autoComplete="off" />
+              <div>
+                <TextField
+                  label="Password"
+                  type="password"
+                  value={form.smtpPassword}
+                  onChange={set('smtpPassword')}
+                  placeholder={settings.email.passwordSet ? '•••••••• (saved — leave blank to keep)' : ''}
+                  autoComplete="new-password"
+                />
+                {settings.email.passwordSet && (
+                  <button
+                    type="button"
+                    className="mt-1 text-xs text-red-600 hover:underline"
+                    disabled={busy}
+                    onClick={() => run(() => adminApi.updateSettings({ smtp: { clearPassword: true } }), 'SMTP password removed')}
+                  >
+                    Remove saved password
+                  </button>
+                )}
+              </div>
+            </div>
+            <TextField
+              label="From address"
+              value={form.smtpFrom}
+              onChange={set('smtpFrom')}
+              placeholder="Portal Notifications <no-reply@your-domain.com>"
+              hint="Many providers require this to match the username's address."
+            />
+          </fieldset>
           <div>
             <label className="label" htmlFor="notify-emails">Notification recipients</label>
             <textarea
