@@ -19,12 +19,15 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
-app.use(
-  cors({
-    origin: env.clientUrl.split(',').map((s) => s.trim()),
-    credentials: true,
-  })
-);
+const allowedOrigins = env.clientUrl.split(',').map((s) => s.trim().replace(/\/$/, ''));
+if (!env.isProduction) {
+  // localhost and 127.0.0.1 are different origins to the browser; accept both in development.
+  for (const o of [...allowedOrigins]) {
+    if (o.includes('//localhost')) allowedOrigins.push(o.replace('//localhost', '//127.0.0.1'));
+    if (o.includes('//127.0.0.1')) allowedOrigins.push(o.replace('//127.0.0.1', '//localhost'));
+  }
+}
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '200kb' }));
 app.use(express.urlencoded({ extended: false, limit: '200kb' }));
 app.use(cookieParser());

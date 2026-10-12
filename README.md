@@ -312,7 +312,7 @@ header returned when the draft was created. The frontend keeps it in `localStora
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | Fallback outgoing mail for admin notifications, used when no SMTP server is set in Admin → Settings (optional) |
 | `UPLOAD_DIR`, `MAX_FILE_SIZE_MB` | Upload location and per-file size cap |
 | `RATE_LIMIT_WINDOW_MINUTES`, `RATE_LIMIT_MAX_REQUESTS` | Global rate limit |
-| `SEED_SUPER_ADMIN_*` | Used by bootstrap scripts only |
+| `SEED_SUPER_ADMIN_EMAIL`, `SEED_SUPER_ADMIN_PASSWORD`, `SEED_SUPER_ADMIN_NAME` | First Super Admin: created automatically on server start when none exists, and used by `npm run seed` / `create-admin` |
 
 `frontend/.env`: `VITE_API_BASE_URL` (default `http://localhost:5000/api`).
 
@@ -324,7 +324,8 @@ header returned when the draft was created. The frontend keeps it in `localStora
 | backend | `npm start` | Start in production |
 | backend | `npm test` | Unit + HTTP smoke tests (no database needed) |
 | backend | `npm run create-admin -- --email=… --password=… --name="…"` | Create or promote a Super Admin |
-| backend | `npm run seed-settings` | Seed the default settings document |
+| backend | `npm run seed` | Seed default settings + Super Admin from `SEED_SUPER_ADMIN_*` |
+| backend | `npm run seed-settings` | Seed the default settings document only |
 | frontend | `npm run dev` | Vite dev server (port 5173) |
 | frontend | `npm run build` | Type-check and build to `dist/` |
 | frontend | `npm run preview` | Preview the production build |
@@ -413,15 +414,48 @@ The portal runs on `http://localhost:5173` by default.
 
 ### 7. Create the First Admin
 
+Pick **one** of these options.
+
+**Option A: automatic seeding (easiest).** Add these lines to `backend/.env`, then start (or
+restart) the backend:
+
+```env
+SEED_SUPER_ADMIN_EMAIL=admin@yourdomain.com
+SEED_SUPER_ADMIN_PASSWORD=StrongPass123
+SEED_SUPER_ADMIN_NAME=Jane Admin
+```
+
+On startup the server logs `[seed] Created Super Admin …`. It only does this while **no** active
+Super Admin exists, so it never overwrites an existing account. Remove the password from `.env`
+once you've logged in.
+
+**Option B: run the script.**
+
 ```bash
 cd backend
 npm run create-admin -- --email=admin@yourdomain.com --password=StrongPass123 --name="Jane Admin"
 ```
 
-This creates (or promotes an existing account to) a `SUPER_ADMIN`. Log in at
-`http://localhost:5173/admin/login`. From Admin → Settings you can then set the agency name,
-logo, contact details, and application fee. From Admin → Admin Users you can create
+- On Windows PowerShell, `npm run create-admin --email=… --password=…` (without the `--`) works too.
+- Run `npm run create-admin` with no arguments to be prompted for the email and password.
+- Running it again for an existing email promotes that account to Super Admin, reactivates it,
+  and resets its password. Use this if you get locked out.
+- `npm run seed` creates the default settings and the Super Admin from the `SEED_SUPER_ADMIN_*`
+  variables in one go.
+
+Then log in at `http://localhost:5173/admin/login`. From Admin → Settings you can set the agency
+name, logo, contact details, and application fee. From Admin → Admin Users you can create
 `APPLICATION_OFFICER`, `FINANCE_OFFICER`, and `VIEWER` accounts.
+
+**Can't log in?**
+
+| Symptom | Fix |
+|---|---|
+| Script says `Could not connect to MongoDB` | Start MongoDB, or fix `MONGODB_URI` (Atlas: check the password and the Network Access IP allow-list). |
+| Script says `No email given` | Pass `--email=… --password=…`, or set the `SEED_SUPER_ADMIN_*` variables in `backend/.env`. |
+| Login page says `Invalid email or password` | Re-run `npm run create-admin -- --email=… --password=NewPass123` to reset the password. Make sure the backend uses the same `MONGODB_URI` as the script. |
+| Login page says `Could not reach the server` | Start the backend, check `VITE_API_BASE_URL` in `frontend/.env`, and set `CLIENT_URL` in `backend/.env` to the exact address in your browser bar (e.g. `http://localhost:5173`). |
+| Logged in, but sent back to the login page | Check that `JWT_SECRET` is set and didn't change between restarts. In production, serve the API over HTTPS. |
 
 ### 8. Test an Application
 
@@ -452,7 +486,8 @@ logo, contact details, and application fee. From Admin → Admin Users you can c
 - Build the frontend: `cd frontend && npm run build`, then serve the `dist/` folder via your
   static host or CDN, with `VITE_API_BASE_URL` pointing at your production API. Configure the
   host to fall back to `index.html` for client-side routes (`/apply`, `/admin/...`).
-- Run `npm run create-admin` once against production to bootstrap the first Super Admin.
+- Bootstrap the first Super Admin with the `SEED_SUPER_ADMIN_*` variables (then remove the
+  password) or by running `npm run create-admin` once against production.
 - Persist the `backend/uploads/` directory (volume or object storage) and back it up with the database.
 - Consider adding a process manager (PM2/systemd) and log rotation for the backend.
 

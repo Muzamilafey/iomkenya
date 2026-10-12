@@ -9,7 +9,7 @@ router.post(
   '/login',
   loginLimiter,
   [
-    body('email').isEmail().withMessage('Enter a valid email').normalizeEmail({ gmail_remove_dots: false }),
+    body('email').trim().isEmail().withMessage('Enter a valid email').toLowerCase(),
     body('password').isString().isLength({ min: 1, max: 200 }).withMessage('Password is required'),
   ],
   validate,
