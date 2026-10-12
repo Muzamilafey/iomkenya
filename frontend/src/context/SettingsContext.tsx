@@ -3,8 +3,8 @@ import { fetchPublicSettings } from '../api/applications';
 import type { PublicSettings } from '../api/types';
 
 const DEFAULT_SETTINGS: PublicSettings = {
-  agencyName: 'Horizon Travel Assistance',
-  heroHeadline: 'Apply for travel assistance in a few simple steps',
+  agencyName: 'IOM',
+  heroHeadline: 'Apply for Ressetlemnt in a few simple steps',
   heroSubheadline:
     'Complete your application online, upload your documents and pay securely with M-Pesa. Track your progress any time.',
   logoUrl: '',

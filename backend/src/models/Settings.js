@@ -5,7 +5,7 @@ const SETTINGS_KEY = 'GLOBAL_SETTINGS';
 const settingsSchema = new mongoose.Schema(
   {
     key: { type: String, default: SETTINGS_KEY, unique: true, immutable: true },
-    agencyName: { type: String, default: 'Horizon Travel Assistance', trim: true, maxlength: 120 },
+    agencyName: { type: String, default: 'IOM', trim: true, maxlength: 120 },
     heroHeadline: {
       type: String,
       default: 'Apply for travel assistance in a few simple steps',
