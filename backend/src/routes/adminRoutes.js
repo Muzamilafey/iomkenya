@@ -80,7 +80,7 @@ router.post(
   superOnly,
   [
     body('name').isString().trim().isLength({ min: 2, max: 120 }).withMessage('Name is required'),
-    body('email').isEmail().withMessage('Enter a valid email').normalizeEmail({ gmail_remove_dots: false }),
+    body('email').trim().isEmail().withMessage('Enter a valid email').toLowerCase(),
     body('password').isString().isLength({ min: 8, max: 200 }).withMessage('Password must be at least 8 characters'),
     body('role').isIn(ADMIN_ROLES).withMessage('Invalid role'),
   ],

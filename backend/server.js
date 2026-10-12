@@ -1,9 +1,11 @@
 const env = require('./src/config/env');
 const { connectDB, disconnectDB } = require('./src/config/db');
 const app = require('./src/app');
+const { seedSuperAdminFromEnv } = require('./src/services/adminSeedService');
 
 async function start() {
   await connectDB();
+  await seedSuperAdminFromEnv().catch((err) => console.error(`[seed] Could not seed Super Admin: ${err.message}`));
   const server = app.listen(env.port, () => {
     console.log(`[server] API listening on port ${env.port} (${env.nodeEnv})`);
   });
@@ -25,6 +27,6 @@ async function start() {
 }
 
 start().catch((err) => {
-  console.error('[server] Failed to start:', err);
+  console.error(`[server] Failed to start: ${err.message}`);
   process.exit(1);
 });
