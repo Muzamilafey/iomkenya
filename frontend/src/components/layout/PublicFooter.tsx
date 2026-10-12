@@ -9,8 +9,7 @@ export default function PublicFooter() {
         <div>
           <p className="font-semibold text-slate-900">{settings.agencyName}</p>
           <p className="mt-2 text-xs leading-relaxed text-slate-500">
-            An independent travel assistance agency. We are not affiliated with IOM, UNHCR, any embassy or any
-            government.
+            
           </p>
         </div>
         <div>

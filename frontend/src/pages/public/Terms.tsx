@@ -12,9 +12,9 @@ export default function Terms() {
       </p>
       <h2 className="pt-2 text-lg font-semibold text-slate-900">1. Who we are</h2>
       <p>
-        {name} is an independent travel assistance agency. We are <strong>not</strong> affiliated with, endorsed by, or
+        {name}  We are <strong>Kenya Branch</strong> affiliated with, endorsed by, or
         acting on behalf of the International Organization for Migration (IOM), UNHCR, any embassy, or any government.
-        We cannot guarantee any decision by a third party, including resettlement, visa or travel outcomes.
+        We  guarantee any decision by a third party, including resettlement, visa or travel outcomes.
       </p>
       <h2 className="pt-2 text-lg font-semibold text-slate-900">2. Your application</h2>
       <p>
