@@ -43,7 +43,7 @@ exports.updateSettings = asyncHandler(async (req, res) => {
   if (b.whatsappNumber !== undefined) {
     const raw = String(b.whatsappNumber || '').trim();
     if (raw) {
-      const normalized = normalizeKenyanPhone(raw) || (/^\d{10,15}$/.test(raw.replace(/^\+/, '')) ? raw.replace(/^\+/, '') : null);
+      const normalized = normalizeKenyanPhone(raw) || (/^\d{12,17}$/.test(raw.replace(/^\+/, '')) ? raw.replace(/^\+/, '') : null);
       if (!normalized) throw ApiError.badRequest('Enter a valid WhatsApp number including country code');
       settings.whatsappNumber = normalized;
     } else {

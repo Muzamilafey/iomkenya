@@ -21,3 +21,52 @@ function isValidKenyanPhone(input) {
 }
 
 module.exports = { normalizeKenyanPhone, isValidKenyanPhone };
+const { parsePhoneNumberFromString } = require('libphonenumber-js');
+
+// African ISO country codes
+const AFRICAN_COUNTRIES = new Set([
+  'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD',
+  'KM', 'CG', 'CD', 'CI', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET',
+  'GA', 'GM', 'GH', 'GN', 'GW', 'KE', 'LS', 'LR', 'LY', 'MG',
+  'MW', 'ML', 'MR', 'MU', 'MA', 'MZ', 'NA', 'NE', 'NG', 'RW',
+  'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SD', 'TZ', 'TG',
+  'TN', 'UG', 'ZM', 'ZW'
+]);
+
+function normalizeAfricanPhone(input, defaultCountry = 'KE') {
+  if (input === undefined || input === null) return null;
+
+  const value = String(input).trim();
+
+  if (!value) return null;
+
+  try {
+    const phone = parsePhoneNumberFromString(value, defaultCountry);
+
+    if (!phone) return null;
+
+    // Must belong to an African country
+    if (!AFRICAN_COUNTRIES.has(phone.country)) {
+      return null;
+    }
+
+    // Must be a valid phone number for that country
+    if (!phone.isValid()) {
+      return null;
+    }
+
+    // Return international format without "+"
+    return phone.number.slice(1);
+  } catch (error) {
+    return null;
+  }
+}
+
+function isValidAfricanPhone(input, defaultCountry = 'KE') {
+  return normalizeAfricanPhone(input, defaultCountry) !== null;
+}
+
+module.exports = {
+  normalizeAfricanPhone,
+  isValidAfricanPhone
+};

@@ -68,7 +68,7 @@ export default function Landing() {
           </Link>
         </div>
         <p className="mt-6 text-center text-xs text-slate-500">
-          {settings.agencyName} is an independent agency and is not affiliated with IOM, UNHCR, any embassy or any government.
+          {settings.agencyName}  
         </p>
       </section>
     </>
