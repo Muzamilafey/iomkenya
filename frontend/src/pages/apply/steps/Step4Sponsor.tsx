@@ -65,7 +65,7 @@ export default function Step4Sponsor({ application, goTo }: StepProps) {
           value={form.phone}
           onChange={set('phone')}
           error={errors.phone}
-          hint="Kenyan number: 07…, 01… or +254…"
+          hint=""
           required
           inputMode="tel"
           autoComplete="tel"
