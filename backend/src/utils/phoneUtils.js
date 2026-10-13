@@ -20,7 +20,10 @@ function isValidKenyanPhone(input) {
   return normalizeKenyanPhone(input) !== null;
 }
 
-module.exports = { normalizeKenyanPhone, isValidKenyanPhone };
+module.exports = {
+  normalizeAfricanPhone,
+  isValidAfricanPhone
+};
 const { parsePhoneNumberFromString } = require('libphonenumber-js');
 
 // African ISO country codes

@@ -30,7 +30,7 @@ export default function Step4Sponsor({ application, goTo }: StepProps) {
     const e: Record<string, string> = {};
     if (form.fullName.trim().length < 3) e.fullName = 'Enter the sponsor’s full name';
     if (!form.relationship) e.relationship = 'Select the relationship';
-    if (!isValidKenyanPhone(form.phone)) e.phone = 'Enter a valid Kenyan number, e.g. 0712 345 678';
+    if (!isValidKenyanPhone(form.phone)) e.phone = '';
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Enter a valid email or leave blank';
     if (!photo) e.photo = 'Upload the sponsor’s passport photo';
     setErrors(e);
