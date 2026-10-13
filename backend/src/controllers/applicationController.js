@@ -8,7 +8,7 @@ const Settings = require('../models/Settings');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const { hashToken } = require('../middleware/draftAccess');
-const { normalizeKenyanPhone } = require('../utils/phoneUtils');
+const { normalizeAfricanPhone } = require('../utils/phoneUtils');
 const { checkApplicationCompleteness } = require('../utils/applicationCompleteness');
 const { generateApplicationNumber } = require('../services/applicationNumberService');
 const {
@@ -93,7 +93,7 @@ function buildUpdate(body) {
     if (s.phone !== undefined) {
       const raw = str(s.phone, 20);
       // Keep partially-typed numbers as-is during drafting; normalise when valid.
-      set['sponsor.phone'] = normalizeKenyanPhone(raw) || raw.replace(/[^\d+]/g, '').slice(0, 13);
+      set['sponsor.phone'] = normalizeAfricanPhone(raw) || raw.replace(/[^\d+]/g, '').slice(0, 15);
     }
     setIfDefined(set, 'sponsor.email', str(s.email, 160));
   }

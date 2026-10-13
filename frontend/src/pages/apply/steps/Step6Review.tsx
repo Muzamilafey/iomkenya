@@ -7,7 +7,7 @@ import { useApplicationDraft } from '../../../context/ApplicationDraftContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { DOCUMENT_LABELS } from '../../../utils/constants';
 import { formatDate, formatKES } from '../../../utils/format';
-import { formatKenyanPhone } from '../../../utils/phone';
+import { formatPhone } from '../../../utils/phone';
 import type { StepProps } from '../types';
 
 function Section({ title, step, goTo, children }: { title: string; step: number; goTo: (s: number) => void; children: ReactNode }) {
@@ -104,7 +104,7 @@ export default function Step6Review({ application: app, goTo }: StepProps) {
       <Section title="Sponsor" step={4} goTo={goTo}>
         <Item label="Full name" value={app.sponsor?.fullName} />
         <Item label="Relationship" value={app.sponsor?.relationship} />
-        <Item label="Phone" value={formatKenyanPhone(app.sponsor?.phone)} />
+        <Item label="Phone" value={formatPhone(app.sponsor?.phone)} />
         <Item label="Email" value={app.sponsor?.email} />
       </Section>
 

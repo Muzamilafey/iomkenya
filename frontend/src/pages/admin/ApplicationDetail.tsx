@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ADMIN_SETTABLE_STATUSES, CAN_EDIT_APPLICATIONS, DOCUMENT_LABELS, STATUS_LABELS } from '../../utils/constants';
 import { downloadFile } from '../../utils/download';
 import { formatDate, formatDateTime, formatKES } from '../../utils/format';
-import { formatKenyanPhone } from '../../utils/phone';
+import { formatKenyanPhone, formatPhone } from '../../utils/phone';
 
 function Panel({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
   return (
@@ -174,7 +174,7 @@ export default function ApplicationDetail() {
             <dl className="grid gap-4 sm:grid-cols-2">
               <Field label="Full name" value={app.sponsor?.fullName} />
               <Field label="Relationship" value={app.sponsor?.relationship} />
-              <Field label="Phone" value={formatKenyanPhone(app.sponsor?.phone)} />
+              <Field label="Phone" value={formatPhone(app.sponsor?.phone)} />
               <Field label="Email" value={app.sponsor?.email} />
             </dl>
           </Panel>

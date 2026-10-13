@@ -2,7 +2,7 @@ const Application = require('../models/Application');
 const Settings = require('../models/Settings');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
-const { normalizeKenyanPhone } = require('../utils/phoneUtils');
+const { normalizeAfricanPhone } = require('../utils/phoneUtils');
 
 exports.getPublicSettings = asyncHandler(async (req, res) => {
   const settings = await Settings.getSingleton();
@@ -11,7 +11,7 @@ exports.getPublicSettings = asyncHandler(async (req, res) => {
 
 exports.statusCheck = asyncHandler(async (req, res) => {
   const applicationNumber = String(req.body.applicationNumber || '').trim().toUpperCase();
-  const phone = normalizeKenyanPhone(req.body.phone);
+  const phone = normalizeAfricanPhone(req.body.phone);
   const notFound = ApiError.notFound('No application matches that number and phone. Please check and try again.');
   if (!applicationNumber || !phone) throw notFound;
 

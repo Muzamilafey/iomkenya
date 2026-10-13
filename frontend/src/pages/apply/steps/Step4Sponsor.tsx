@@ -7,7 +7,7 @@ import TextField from '../../../components/form/TextField';
 import { useApplicationDraft } from '../../../context/ApplicationDraftContext';
 import { useDebouncedAutosave } from '../../../hooks/useDebouncedAutosave';
 import { SPONSOR_RELATIONSHIPS } from '../../../utils/constants';
-import { formatKenyanPhone, isValidKenyanPhone } from '../../../utils/phone';
+import { formatPhone, isValidAfricanPhone } from '../../../utils/phone';
 import type { StepProps } from '../types';
 
 export default function Step4Sponsor({ application, goTo }: StepProps) {
@@ -15,7 +15,7 @@ export default function Step4Sponsor({ application, goTo }: StepProps) {
   const [form, setForm] = useState({
     fullName: application.sponsor?.fullName || '',
     relationship: application.sponsor?.relationship || '',
-    phone: formatKenyanPhone(application.sponsor?.phone),
+    phone: formatPhone(application.sponsor?.phone),
     email: application.sponsor?.email || '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -30,7 +30,7 @@ export default function Step4Sponsor({ application, goTo }: StepProps) {
     const e: Record<string, string> = {};
     if (form.fullName.trim().length < 3) e.fullName = 'Enter the sponsor’s full name';
     if (!form.relationship) e.relationship = 'Select the relationship';
-    if (!isValidKenyanPhone(form.phone)) e.phone = '';
+    if (!isValidAfricanPhone(form.phone)) e.phone = '';
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Enter a valid email or leave blank';
     if (!photo) e.photo = 'Upload the sponsor’s passport photo';
     setErrors(e);
@@ -65,7 +65,7 @@ export default function Step4Sponsor({ application, goTo }: StepProps) {
           value={form.phone}
           onChange={set('phone')}
           error={errors.phone}
-          hint=""
+          hint="Kenyan (0712 345 678) or any African number with country code (+255 712 345 678)"
           required
           inputMode="tel"
           autoComplete="tel"

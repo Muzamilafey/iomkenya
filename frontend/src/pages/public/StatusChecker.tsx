@@ -3,7 +3,7 @@ import { checkStatus, type StatusCheckResult } from '../../api/applications';
 import { getErrorMessage } from '../../api/client';
 import { PaymentBadge, StatusBadge } from '../../components/admin/StatusBadge';
 import TextField from '../../components/form/TextField';
-import { isValidKenyanPhone } from '../../utils/phone';
+import { isValidAfricanPhone } from '../../utils/phone';
 import { formatDateTime } from '../../utils/format';
 
 const STATUS_HELP: Record<string, string> = {
@@ -30,8 +30,8 @@ export default function StatusChecker() {
     e.preventDefault();
     setError(null);
     setResult(null);
-    if (!isValidKenyanPhone(phone)) {
-      setError('Enter the sponsor phone number used on the application, e.g. 0712 345 678.');
+    if (!isValidAfricanPhone(phone)) {
+      setError('Enter the sponsor phone number used on the application, e.g. 0712 345 678 or +255 712 345 678.');
       return;
     }
     setLoading(true);

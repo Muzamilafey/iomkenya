@@ -7,7 +7,7 @@ import Pager from '../../components/admin/Pager';
 import { PaymentBadge, StatusBadge } from '../../components/admin/StatusBadge';
 import { APPLICATION_STATUSES, PAYMENT_LABELS, PAYMENT_STATUSES, STATUS_LABELS } from '../../utils/constants';
 import { formatDateTime } from '../../utils/format';
-import { formatKenyanPhone } from '../../utils/phone';
+import { formatPhone } from '../../utils/phone';
 
 const FILTER_KEYS = ['q', 'status', 'paymentStatus', 'from', 'to'] as const;
 
@@ -112,7 +112,7 @@ export default function ApplicationsList() {
                     <td className="table-td">{a.applicantName || '—'}</td>
                     <td className="table-td">
                       {a.sponsorName || '—'}
-                      {a.sponsorPhone && <span className="block text-xs text-slate-400">{formatKenyanPhone(a.sponsorPhone)}</span>}
+                      {a.sponsorPhone && <span className="block text-xs text-slate-400">{formatPhone(a.sponsorPhone)}</span>}
                     </td>
                     <td className="table-td">{a.familyCount}</td>
                     <td className="table-td"><StatusBadge status={a.status} /></td>

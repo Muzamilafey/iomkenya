@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeKenyanPhone } = require('../src/utils/phoneUtils');
+const { normalizeKenyanPhone, normalizeAfricanPhone } = require('../src/utils/phoneUtils');
 const { checkApplicationCompleteness } = require('../src/utils/applicationCompleteness');
 const { toCsv } = require('../src/utils/csv');
 const { parseMpesaDate, statusForResultCode } = require('../src/services/paymentProcessingService');
@@ -87,4 +87,14 @@ test('buildUpdate rejects future dates and invalid relationships', () => {
   assert.throws(() => buildUpdate({ applicant: { dateOfBirth: '2999-01-01' } }));
   assert.throws(() => buildUpdate({ sponsor: { relationship: 'Boss' } }));
   assert.throws(() => buildUpdate({ currentStep: 8 }));
+});
+
+test('normalizeAfricanPhone accepts Kenyan and other African numbers only', () => {
+  assert.equal(normalizeAfricanPhone('0712 345 678'), '254712345678');
+  assert.equal(normalizeAfricanPhone('+255 712 345 678'), '255712345678');
+  assert.equal(normalizeAfricanPhone('00256700123456'), '256700123456');
+  assert.equal(normalizeAfricanPhone('+234 803 123 4567'), '2348031234567');
+  for (const bad of ['+14155552671', '+442071838750', '+254212345678', '0812', 'abc', '', null]) {
+    assert.equal(normalizeAfricanPhone(bad), null, String(bad));
+  }
 });
