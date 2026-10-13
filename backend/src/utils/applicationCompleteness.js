@@ -41,7 +41,7 @@ function checkApplicationCompleteness(application, settings) {
   if (!SPONSOR_RELATIONSHIPS.includes(sponsor.relationship)) {
     add(4, 'sponsor.relationship', "Sponsor's relationship is required");
   }
-  if (!isValidKenyanPhone(sponsor.phone)) add(4, 'sponsor.phone', 'A valid Kenyan sponsor phone number is required');
+  if (!isValidKenyanPhone(sponsor.phone)) add(4, 'sponsor.phone', 'A valid  sponsor phone number is required');
   if (!hasDoc('SPONSOR_PASSPORT_PHOTO')) add(4, 'SPONSOR_PASSPORT_PHOTO', "Sponsor's passport photo is required");
 
   // Step 6 — consent
